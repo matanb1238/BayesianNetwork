@@ -120,16 +120,17 @@ class Ex1 {
                     data = data.replace('|', ',');
                     data = data.substring(2, data.length()-3);
                 }
-                System.out.println(algo);
                 if (algo == '1'){
                     Algo1 algo1 = new Algo1(graph);
-                    algo1.algo1(data);
+                    Double existAns = algo1.checkExist(data);
+                    if (existAns!=-1.0){
+                        System.out.println(existAns);
+                    }
+                    else{
+                        algo1.algo1(data);
+                        System.out.println("Query doesn't exist in CPT");
+                    }
                 }
-                // System.out.println(data);
-//                String[] query = data.substring(2, data.length()-3).split("");
-//                for (String q : query){
-//                    System.out.println(q);
-//                }
 
             }
         } catch (FileNotFoundException | ParserConfigurationException e) {

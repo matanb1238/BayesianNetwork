@@ -45,6 +45,7 @@ public class Variable {
         this.parents = parents;
     }
     public HashMap<ArrayList<String>,Double> getCpt(){return cpt;}
+    public boolean checkIfValueExist(String value){return this.getValues().contains(value);}
     public void setCpt(String[] values){
         int parentsListSize = this.parents.size();
         ArrayList<Variable> reversedParents = new ArrayList<>();
