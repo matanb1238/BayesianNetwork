@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -111,7 +112,6 @@ class Ex1 {
                     // Printing all our vars' data
                     graph.printNetwork();
 
-
                 }
                 // Be aware that first line isn't a query
                 Character algo = data.charAt(data.length()-1); // Algo's number
@@ -127,10 +127,17 @@ class Ex1 {
                         System.out.println(existAns);
                     }
                     else{
-                        algo1.algo1(data);
-                        System.out.println("Query doesn't exist in CPT");
+                        ArrayList<String> answer = algo1.algo1(data);
+                        DecimalFormat df = new DecimalFormat("#.#####");
+                        String ans = df.format(Double.parseDouble(answer.get(0)));
+                        System.out.println(ans + ", " + answer.get(1) + ", " + answer.get(2));
                     }
                 }
+                else if (algo == '2'){
+                    Algo2 algo2 = new Algo2(graph);
+                    algo2.algo2(data);
+                }
+
 
             }
         } catch (FileNotFoundException | ParserConfigurationException e) {

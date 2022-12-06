@@ -35,28 +35,47 @@ public class Algo1 {
         }
         return -1.0;
     }
-    public String algo1(String q) {
+    public ArrayList<String> algo1(String q) {
         String[] query = q.split(",");
         ArrayList<String> varsNames = network.getVarsNames();
         ArrayList<String> queryVars = new ArrayList<>();
         // Adding the variables
         for (String value : query) {
-            queryVars.add(Character.toString(value.charAt(0)));
+            int index = 0;
+            for (int i=0; i<value.length(); i++){
+                if (value.charAt(i) == '='){
+                    index = i;
+                }
+                else{
+                    continue;
+                }
+                break;
+            }
+            queryVars.add(value.substring(0, index));
         }
         ArrayList<String> hiddenVarsNames = new ArrayList<>();
         // Adding hidden vars
         for (String var : varsNames) {
             if (!queryVars.contains(var)) {
                 hiddenVarsNames.add(var);
-                System.out.println("Hidden: " + var);
             }
         }
         // Arraylist of the final query - first we are adding the query and evidence vars and values
         Hashtable<Variable, String> finalQuery = new Hashtable<>();
         for (String value : query) {
-            String varName = Character.toString(value.charAt(0));
+            int index = 0;
+            for (int i=0; i<value.length(); i++){
+                if (value.charAt(i) == '='){
+                    index = i;
+                }
+                else{
+                    continue;
+                }
+                break;
+            }
+            String varName = value.substring(0, index);
             Variable var = network.getVarByName(varName);
-            String varValue = Character.toString(value.charAt(2));
+            String varValue = value.substring(index+1, value.length());
             finalQuery.put(var, varValue);
         }
 
@@ -65,27 +84,60 @@ public class Algo1 {
             String firstValue = hiddenVar.getValues().get(0);
             finalQuery.put(hiddenVar, firstValue);
         }
+        String plusCount = "0";
+        String multCount = "0";
         // mone calculate
-        System.out.println("Mone");
-        Double mone = iterateHiddenQueries(finalQuery, hiddenVarsNames);
-        System.out.println("End Mone" + mone);
+        ArrayList<String> moneList = iterateHiddenQueries(finalQuery, hiddenVarsNames, plusCount, multCount);
+        int integerPlusCount = Integer.valueOf(moneList.get(1));
+        int integerMultCount = Integer.valueOf(moneList.get(2));
+        plusCount = Integer.toString(integerPlusCount);
+        multCount = Integer.toString(integerMultCount);
+        Double mone = Double.parseDouble(moneList.get(0));
+        System.out.println("Mone: " + mone);
         Double mechane = mone;
-        String firstVarName = Character.toString(query[0].charAt(0));
+        int index = 0;
+        for (int i=0; i<query[0].length(); i++){
+            if (query[0].charAt(i) == '='){
+                index = i;
+            }
+            else{
+                continue;
+            }
+            break;
+        }
+        String firstVarName = query[0].substring(0, index);
+        int len = query[0].length();
         Variable firstVar = network.getVarByName(firstVarName);
-        String oldValue = firstVar.getValues().get(0);
+        String oldValue = query[0].substring(index+1, len);
+        ArrayList<String> oldValues = new ArrayList<>();
+        oldValues.add(oldValue);
+        // Now we will calculate the mechane - we will iterate on all the "other" values of the first var in the query
         for (String newValue : firstVar.getValues()){
-            if (!newValue.equals(oldValue)){
+            if (!oldValues.contains(newValue)){ // We don't want the first value (from the original query)
                 finalQuery.replace(firstVar, oldValue, newValue);
-                mechane += iterateHiddenQueries(finalQuery, hiddenVarsNames);
-                oldValue = newValue;
+                ArrayList<String> mechaneList = iterateHiddenQueries(finalQuery, hiddenVarsNames, plusCount, multCount);
+                // Updating counters
+                mechane += Double.parseDouble(mechaneList.get(0));
+                System.out.println("Mechane: " + mechane);
+                int plusCounter = Integer.valueOf(mechaneList.get(1));
+                plusCount = Integer.toString(++plusCounter); // Adding one because we did another plus action now
+                int multCounter = Integer.valueOf(mechaneList.get(2));
+                multCount = Integer.toString(multCounter);
+                oldValues.add(newValue);
+                oldValue=newValue;
+                System.out.print("Check if newvalue=oldvalue is neccessary");
             }
         }
-        System.out.println("Final Answer= " + mone/mechane);
-        return "";
+        ArrayList<String> finalAnswerList = new ArrayList<>();
+        finalAnswerList.add(Double.toString(mone/mechane));
+        finalAnswerList.add(plusCount);
+        finalAnswerList.add(multCount);
+        return finalAnswerList;
     }
 
-    public Double iterateHiddenQueries(Hashtable<Variable, String> query, ArrayList<String> hiddenVarsNames){
+    public ArrayList<String> iterateHiddenQueries(Hashtable<Variable, String> query, ArrayList<String> hiddenVarsNames, String plusCount, String multCount){
         Double finalAnswer = 0.0;
+        int plusIndex = 0; // We will use an index to figure the first plus action - we don't want to consider it to our count
         // Now we are adding the hidden vars
         // We also want to calculate the number of values of the hidden vars
         // so we can iterate over them according to the algorithm
@@ -118,39 +170,49 @@ public class Algo1 {
                     query.put(hiddenVar, newValue);
                 }
             }
-            System.out.println("I: " + i);
-            System.out.println("Starting Algo: ");
-            for (Variable var : query.keySet()){
-                System.out.println(var.getName() + "=" + query.get(var));
+            ArrayList<String> currFinalAnswerList = calculateQuery(query, plusCount, multCount);
+            Double ans = Double.parseDouble(currFinalAnswerList.get(0));
+            finalAnswer += ans;
+            if (plusIndex!=0){
+                int plusCounter = Integer.valueOf(currFinalAnswerList.get(1));
+                plusCount = Integer.toString(++plusCounter);
             }
-            System.out.println("+");
-            finalAnswer += calculateQuery(query);
+            plusIndex++;
+            multCount = currFinalAnswerList.get(2);
         }
-        return finalAnswer;
+        System.out.println("plusCount: " + plusCount);
+        System.out.println("multCount: " + multCount);
+        ArrayList<String> finalAnswerList = new ArrayList<>();
+        finalAnswerList.add(Double.toString(finalAnswer));
+        finalAnswerList.add(plusCount);
+        finalAnswerList.add(multCount);
+        return finalAnswerList;
     }
 
     // Given a query with Node and it's values - we calculate it
-    public Double calculateQuery(Hashtable<Variable, String> query){
+    public ArrayList<String> calculateQuery(Hashtable<Variable, String> query, String plusCount, String multCount){
         Double finalAns = 1.0;
+        int multCounter = Integer.valueOf(multCount);
+        int multIndex = 0; // We don't want to consider the first multiplying so we will use an index to figure the first one
         for (Variable var : query.keySet()){
             ArrayList<String> answerQuery = new ArrayList<>();
             // If var has no parents
             if (var.getParents().size()==0){
                 ArrayList<String> valueArrList = new ArrayList<>();
                 valueArrList.add(var.getName() + "=" + query.get(var));
-                System.out.println(var.getName() + "=" + query.get(var) + "=" + var.getCpt().get(valueArrList));
                 finalAns *= var.getCpt().get(valueArrList);
+                if (multIndex!=0){ // If not first multiplying
+                    multCounter++;
+                }
+                multIndex++;
             }
             else {
                 // First we are adding the nodeVar
                 answerQuery.add(var.getName() + "=" + query.get(var));
-                //System.out.println("AnswerQuery");
-                //System.out.println(var.getName() + "=" + query.get(var));
                 // Now we are adding all the parents and their current query value to the answer query
                 for (Variable parent : var.getParents()){
                     answerQuery.add(parent.getName() + "=" + query.get(parent));
                 }
-                //System.out.println("End");
             }
 
             // Now we have the answer query for the current var
@@ -161,11 +223,13 @@ public class Algo1 {
                 for (String answerQueryValue : answerQuery){
                     String name = Character.toString(answerQueryValue.charAt(0));
                     String val = Character.toString(answerQueryValue.charAt(2));
-                    //System.out.println("AnswerQueryValue: " + name + "=" + val);
                     if (cptLine.contains(answerQueryValue)){
                         if (++counter==cptLine.size()){
                             finalAns *= var.getCpt().get(cptLine);
-                            System.out.println(var.getName() + "=" + query.get(var) + "=" + var.getCpt().get(cptLine));
+                            if (multIndex!=0){ // If not first multiplying
+                                multCounter++;
+                            }
+                            multIndex++;
                         }
                         else{
                             continue;
@@ -178,6 +242,10 @@ public class Algo1 {
             }
 
         }
-        return finalAns;
+        ArrayList<String> finalAnswerList = new ArrayList<>();
+        finalAnswerList.add(Double.toString(finalAns));
+        finalAnswerList.add(plusCount);
+        finalAnswerList.add(Integer.toString(multCounter));
+        return finalAnswerList;
     }
 }
