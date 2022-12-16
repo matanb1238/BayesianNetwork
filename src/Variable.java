@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.Set;
 
 
 public class Variable {
@@ -8,6 +9,7 @@ public class Variable {
     private ArrayList<Variable> parents;
     private ArrayList<String> values;
     private HashMap<ArrayList<String>,Double> cpt;
+
 
     public Variable(){
         name = "";
