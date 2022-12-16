@@ -140,12 +140,55 @@ public class Algo2 {
     }
     public void eliminateFactors(Variable var, HashMap<ArrayList<String>,Double> factor1,
                                  HashMap<ArrayList<String>,Double> factor2){
-        System.out.println(var.getName());
-        for (ArrayList<String> arr : factor1.keySet()){
-            System.out.println(arr);
+        System.out.println("Factor Var: " + var.getName());
+        HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
+        // first, let's get the index of the var in the factor lines, we want to delete it
+        int index1 = getIndexInFactor(var, factor1);
+        int index2 = getIndexInFactor(var, factor2);
+        System.out.println("Indexes: " + index1 + ", " + index2);
+        for (ArrayList<String> cptLine_factor1 : factor1.keySet()){
+            for (ArrayList<String> cptLine_factor2 : factor2.keySet()){
+                ArrayList<String> copy_cpt_factor1 = cptLine_factor1;
+                ArrayList<String> copy_cpt_factor2 = cptLine_factor1;
+                copy_cpt_factor1.remove(index1);
+                copy_cpt_factor2.remove(index2);
+                if (checkIfLineIsEqual(cptLine_factor1, cptLine_factor2)){
+                    System.out.println("These rows are equal: " + factor1 + "\n" + factor2);
+                }
+
+            }
         }
-        for (ArrayList<String> arr : factor2.keySet()){
-            System.out.println(arr);
+    }
+
+    public int getIndexInFactor (Variable var, HashMap<ArrayList<String>,Double> factor){
+        int index=0;
+        for (ArrayList<String> cptLine : factor.keySet()){
+            for (String str : cptLine){
+                System.out.println(str.substring(0, str.indexOf("="))+ var.getName());
+                if (str.substring(0, str.indexOf("=")).equals(var.getName())){
+                    return index;
+                }
+                index++;
+            }
         }
+        return -1;
+    }
+
+    // CPT lines can be equal but in different order so we will check it here (for the elimination part)
+    public boolean checkIfLineIsEqual(ArrayList<String> line1, ArrayList<String> line2){
+        int count = 0;
+        int size = line1.size();
+        for (String str1 : line1){
+            for (String str2 : line2){
+                if (str1.equals(str2)){
+                    count++;
+                }
+            }
+        }
+        if (count == size){
+            System.out.println("True: "+ line1 + "\n" + line2);
+            return true;
+        }
+        return false;
     }
 }
