@@ -59,7 +59,8 @@ public class Algo2 {
                         }
                         index++;
                     }
-                    eliminateFactors(network.getVarByName(varName), factor1, factor2);
+                    ArrayList<String> commonVars = getCommonVars(factor1, factor2);
+                    joinFactors(network.getVarByName(varName), factor1, factor2);
                 }
             }
             else{
@@ -138,18 +139,50 @@ public class Algo2 {
         }
         return relevantFactors;
     }
-    public void eliminateFactors(Variable var, HashMap<ArrayList<String>,Double> factor1,
+
+    public ArrayList<String> getCommonVars(HashMap<ArrayList<String>,Double> factor1,
+                                    HashMap<ArrayList<String>,Double> factor2){
+        ArrayList<String> vars1 = new ArrayList<>();
+        ArrayList<String> vars2 = new ArrayList<>();
+        ArrayList<String> finalVars = new ArrayList<>();
+        for (ArrayList<String> cptLine : factor1.keySet()){
+            for (String str : cptLine){
+                str = str.substring(0, str.indexOf("="));
+                vars1.add(str);
+            }
+            break;
+        }
+        for (ArrayList<String> cptLine : factor2.keySet()){
+            for (String str : cptLine){
+                str = str.substring(0, str.indexOf("="));
+                vars2.add(str);
+            }
+            break;
+        }
+
+        for (String str1 : vars1){
+            for (String str2 : vars2){
+                if (str1.equals(str2)){
+                    finalVars.add(str1);
+                }
+            }
+        }
+        return finalVars;
+    }
+    public void joinFactors(Variable var, HashMap<ArrayList<String>,Double> factor1,
                                  HashMap<ArrayList<String>,Double> factor2){
         System.out.println("Factor Var: " + var.getName());
         HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
         // first, let's get the index of the var in the factor lines, we want to delete it
         int index1 = getIndexInFactor(var, factor1);
         int index2 = getIndexInFactor(var, factor2);
+        System.out.println(factor1);
+        System.out.println(factor2);
         System.out.println("Indexes: " + index1 + ", " + index2);
         for (ArrayList<String> cptLine_factor1 : factor1.keySet()){
             for (ArrayList<String> cptLine_factor2 : factor2.keySet()){
-                ArrayList<String> copy_cpt_factor1 = cptLine_factor1;
-                ArrayList<String> copy_cpt_factor2 = cptLine_factor1;
+                ArrayList<String> copy_cpt_factor1 = new ArrayList<>(cptLine_factor1);
+                ArrayList<String> copy_cpt_factor2 = new ArrayList<>(cptLine_factor2);
                 copy_cpt_factor1.remove(index1);
                 copy_cpt_factor2.remove(index2);
                 if (checkIfLineIsEqual(cptLine_factor1, cptLine_factor2)){
