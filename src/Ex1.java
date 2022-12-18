@@ -134,7 +134,7 @@ class Ex1 {
 //                    }
                 }
                 else if (algo == '2'){
-                    Algo2 algo2 = new Algo2(graph);
+                    Algo2 algo2 = new Algo2(graph, data);
                     algo2.algo2(data);
                 }
 

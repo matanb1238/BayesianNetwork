@@ -4,13 +4,25 @@ import java.util.*;
 public class Algo2 {
     private BayesianNetwork network;
     private Set<HashMap<ArrayList<String>,Double>> factors;
+    private String query;
 
-    public Algo2(BayesianNetwork network){
+    public Algo2(BayesianNetwork network, String query){
         this.network = network;
         this.factors = new HashSet<>();
+        this.query = query;
     }
     public Set<HashMap<ArrayList<String>,Double>> getFactors(){return factors;}
 
+    public ArrayList<String> getQueryVars(){
+        ArrayList<String> queryVars = new ArrayList<>();
+        String[] q = this.query.split(",");
+        for (String str : q){
+            str = str.substring(0, str.indexOf('='));
+            queryVars.add(str);
+        }
+        System.out.println("dsfdsfdsfdsfs" + queryVars.toString());
+        return queryVars;
+    }
     public ArrayList<String> algo2(String q){
         System.out.println("Query: " + q);
         ArrayList<String> finalAnswer = new ArrayList<>();
@@ -36,38 +48,60 @@ public class Algo2 {
                 }
             }
             if (isHidden) {
+                if (!checkIfFatherOfQueryVar(this.network.getVarByName(varName), getQueryVars())){
+                    System.out.println("Not a parent of query var !");
+                    break;
+                }
                 Set<HashMap<ArrayList<String>, Double>> relevantFactors = getVarFactors(varName);
-                //System.out.println(relevantFactors.size());
-                for (HashMap<ArrayList<String>, Double> factor : relevantFactors){
-                    //System.out.println(factor);
-                }
-                if (relevantFactors.size() == 1){
-                    System.out.println("Only One Factor");
-                }
-                else{
-                    Hashtable<HashMap<ArrayList<String>, Double>, Integer> factorAndSize = getAllFactorsSizes(relevantFactors);
-                    Hashtable<HashMap<ArrayList<String>, Double>, Integer> twoMinFactors = getTwoMinFactors(factorAndSize);
-                    HashMap<ArrayList<String>, Double> factor1 = new HashMap<>();
-                    HashMap<ArrayList<String>, Double> factor2 = new HashMap<>();
-                    int index = 0;
-                    for (HashMap<ArrayList<String>, Double> factor : twoMinFactors.keySet()){
-                        if (index == 0){
-                            factor1 = factor;
-                        }
-                        else if (index == 1){
-                            factor2 = factor;
-                        }
-                        index++;
+                while (relevantFactors.size() > 1) {
+                    System.out.println("Current Size: " + relevantFactors.size());
+                    if (relevantFactors.size() == 1){
+                        System.out.println("Only One Factor");
                     }
-                    ArrayList<String> commonVars = getCommonVars(factor1, factor2);
-                    joinFactors(network.getVarByName(varName), factor1, factor2);
+                    else{
+                        Hashtable<HashMap<ArrayList<String>, Double>, Integer> factorAndSize = getAllFactorsSizes(relevantFactors);
+                        Hashtable<HashMap<ArrayList<String>, Double>, Integer> twoMinFactors = getTwoMinFactors(factorAndSize);
+                        HashMap<ArrayList<String>, Double> factor1 = new HashMap<>();
+                        HashMap<ArrayList<String>, Double> factor2 = new HashMap<>();
+                        int index = 0;
+                        for (HashMap<ArrayList<String>, Double> factor : twoMinFactors.keySet()){
+                            if (index == 0){
+                                factor1 = factor;
+                            }
+                            else if (index == 1){
+                                factor2 = factor;
+                            }
+                            index++;
+                        }
+                        joinFactors(network.getVarByName(varName), factor1, factor2, relevantFactors);
+                    }
                 }
-            }
-            else{
+                if (relevantFactors.size() == 1) {
+                    for (HashMap<ArrayList<String>, Double> factor : relevantFactors){
+                        eliminateFactor(network.getVarByName(varName), factor, relevantFactors);
+                    }
+                }
+                else {
+                    System.out.println("ERROR - Factor size is probably 0 - check this");
+                }
             }
         }
         // Now - we have all the factors initialized to the CPTs
         return finalAnswer;
+    }
+
+    public boolean checkIfFatherOfQueryVar(Variable var, ArrayList<String> queryVars){
+        for (String queryVarName : queryVars){
+            Variable queryVar = network.getVarByName(queryVarName);
+            if (queryVar.getParents().contains(var)){
+                return true;
+            }
+            else {
+                ArrayList<Variable> queryVarParents = queryVar.getParents();
+                return checkIfFatherOfQueryVar(var, queryVar.getParentsNames(queryVarParents));
+            }
+        }
+        return false;
     }
 
     public Hashtable<HashMap<ArrayList<String>, Double>, Integer>  getAllFactorsSizes(Set<HashMap<ArrayList<String>, Double>> relevantFactors){
@@ -169,35 +203,99 @@ public class Algo2 {
         }
         return finalVars;
     }
-    public void joinFactors(Variable var, HashMap<ArrayList<String>,Double> factor1,
-                                 HashMap<ArrayList<String>,Double> factor2){
-        System.out.println("Factor Var: " + var.getName());
-        HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
-        // first, let's get the index of the var in the factor lines, we want to delete it
-        int index1 = getIndexInFactor(var, factor1);
-        int index2 = getIndexInFactor(var, factor2);
-        System.out.println(factor1);
-        System.out.println(factor2);
-        System.out.println("Indexes: " + index1 + ", " + index2);
-        for (ArrayList<String> cptLine_factor1 : factor1.keySet()){
-            for (ArrayList<String> cptLine_factor2 : factor2.keySet()){
-                ArrayList<String> copy_cpt_factor1 = new ArrayList<>(cptLine_factor1);
-                ArrayList<String> copy_cpt_factor2 = new ArrayList<>(cptLine_factor2);
-                copy_cpt_factor1.remove(index1);
-                copy_cpt_factor2.remove(index2);
-                if (checkIfLineIsEqual(cptLine_factor1, cptLine_factor2)){
-                    System.out.println("These rows are equal: " + factor1 + "\n" + factor2);
-                }
 
+    // Here we check if two factor lines should be multiplied by each other at the join part
+    public boolean checkIfJoinLines(ArrayList<String> Line1, ArrayList<String> Line2, ArrayList<String> commonVars){
+        int count = 0;
+        for (String str1 : Line1){
+            for (String str2: Line2){
+                if (str1.equals(str2) && commonVars.contains(str1.substring(0, str1.indexOf("=")))){
+                    count++;
+                }
             }
         }
+        return count == commonVars.size();
     }
 
+    public ArrayList<String> getNewLineAfterJoin (ArrayList<String> Line1, ArrayList<String> Line2) {
+        ArrayList<String> newLine = new ArrayList<>(Line1);
+        for (String str2 : Line2){
+            if (!newLine.contains(str2)){
+                newLine.add(str2);
+            }
+        }
+        return newLine;
+    }
+    public void joinFactors(Variable var, HashMap<ArrayList<String>,Double> factor1,
+                                 HashMap<ArrayList<String>,Double> factor2, Set<HashMap<ArrayList<String>, Double>> relevantFactors){
+        ArrayList<String> commonVars = getCommonVars(factor1, factor2);
+        System.out.println(commonVars.toString());
+        HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
+        for (ArrayList<String> cptLine_factor1 : factor1.keySet()) {
+            for (ArrayList<String> cptLine_factor2 : factor2.keySet()) {
+                if (checkIfJoinLines(cptLine_factor1, cptLine_factor2, commonVars)){
+                    ArrayList<String> newLine = getNewLineAfterJoin(cptLine_factor1, cptLine_factor2);
+                    Double p1 = factor1.get(cptLine_factor1);
+                    Double p2 = factor2.get(cptLine_factor2);
+                    Double newP = p1*p2;
+                    newFactor.put(newLine, newP);
+                }
+            }
+        }
+        this.factors.add(newFactor);
+        this.factors.remove(factor1);
+        this.factors.remove(factor2);
+        relevantFactors.add(newFactor);
+        relevantFactors.remove(factor1);
+        relevantFactors.remove(factor2);
+        //    System.out.println("Factor Var: " + var.getName());
+        // first, let's get the index of the var in the factor lines, we want to delete it
+//        int index1 = getIndexInFactor(var, factor1);
+//        int index2 = getIndexInFactor(var, factor2);
+//        System.out.println(factor1);
+//        System.out.println(factor2);
+//        System.out.println("Indexes: " + index1 + ", " + index2);
+//        for (ArrayList<String> cptLine_factor1 : factor1.keySet()){
+//            for (ArrayList<String> cptLine_factor2 : factor2.keySet()){
+//                ArrayList<String> copy_cpt_factor1 = new ArrayList<>(cptLine_factor1);
+//                ArrayList<String> copy_cpt_factor2 = new ArrayList<>(cptLine_factor2);
+//                copy_cpt_factor1.remove(index1);
+//                copy_cpt_factor2.remove(index2);
+//                if (checkIfLineIsEqual(cptLine_factor1, cptLine_factor2)){
+//                    System.out.println("These rows are equal: " + factor1 + "\n" + factor2);
+//                }
+//
+//            }
+//        }
+    }
+
+    public void eliminateFactor (Variable var, HashMap<ArrayList<String>,Double> factor, Set<HashMap<ArrayList<String>, Double>> relevantFactors){
+        int varIndex = getIndexInFactor(var, factor);
+        HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
+        for (ArrayList<String> cptLine_factor1 : factor.keySet()){
+            for (ArrayList<String> cptLine_factor2 : factor.keySet()) {
+                if (cptLine_factor1 != cptLine_factor2){
+                    ArrayList<String> copy_cpt_factor1 = new ArrayList<>(cptLine_factor1);
+                    ArrayList<String> copy_cpt_factor2 = new ArrayList<>(cptLine_factor2);
+                    copy_cpt_factor1.remove(varIndex);
+                    copy_cpt_factor2.remove(varIndex);
+//                    System.out.println(var.getName());
+                    if (checkIfLineIsEqual(copy_cpt_factor1, copy_cpt_factor2)){ Double ans = factor.get(cptLine_factor1)+ factor.get(cptLine_factor2);
+                        newFactor.put(copy_cpt_factor1, ans);
+                    }
+                }
+            }
+        }
+        this.factors.remove(factor);
+        this.factors.add(newFactor);
+        relevantFactors.remove(factor);
+        relevantFactors.add(newFactor);
+    }
     public int getIndexInFactor (Variable var, HashMap<ArrayList<String>,Double> factor){
         int index=0;
         for (ArrayList<String> cptLine : factor.keySet()){
             for (String str : cptLine){
-                System.out.println(str.substring(0, str.indexOf("="))+ var.getName());
+//                System.out.println(str.substring(0, str.indexOf("="))+ var.getName());
                 if (str.substring(0, str.indexOf("=")).equals(var.getName())){
                     return index;
                 }
@@ -219,7 +317,6 @@ public class Algo2 {
             }
         }
         if (count == size){
-            System.out.println("True: "+ line1 + "\n" + line2);
             return true;
         }
         return false;
