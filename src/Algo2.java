@@ -49,7 +49,7 @@ public class Algo2 {
             }
             if (isHidden) {
                 if (!checkIfFatherOfQueryVar(this.network.getVarByName(varName), getQueryVars())){
-                    System.out.println("Not a parent of query var !");
+                    System.out.println(varName + " is not a parent of query var !" + q);
                     break;
                 }
                 Set<HashMap<ArrayList<String>, Double>> relevantFactors = getVarFactors(varName);
@@ -90,9 +90,10 @@ public class Algo2 {
         return finalAnswer;
     }
 
-    public boolean checkIfFatherOfQueryVar(Variable var, ArrayList<String> queryVars){
+    public boolean checkIfFatherOfQueryVar2(Variable var, ArrayList<String> queryVars){
         for (String queryVarName : queryVars){
             Variable queryVar = network.getVarByName(queryVarName);
+            System.out.println(queryVar.getName() + " Parents: " + queryVar.getParentsNames(queryVar.getParents()).toString());
             if (queryVar.getParents().contains(var)){
                 return true;
             }
@@ -102,6 +103,21 @@ public class Algo2 {
             }
         }
         return false;
+    }
+
+    public boolean checkIfFatherOfQueryVar(Variable var, ArrayList<String> queryVars){
+        ArrayList<String> newQueryVars = new ArrayList<>();
+        for (String queryVarName : queryVars){
+            Variable queryVar = network.getVarByName(queryVarName);
+            if (queryVar.getParents().contains(var)){
+                return true;
+            }
+            for (Variable parent : queryVar.getParents()){
+                newQueryVars.add(parent.getName());
+            }
+        }
+        return checkIfFatherOfQueryVar2(var, newQueryVars);
+
     }
 
     public Hashtable<HashMap<ArrayList<String>, Double>, Integer>  getAllFactorsSizes(Set<HashMap<ArrayList<String>, Double>> relevantFactors){
