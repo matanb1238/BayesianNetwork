@@ -121,17 +121,17 @@ class Ex1 {
                     data = data.substring(2, data.length()-3);
                 }
                 if (algo == '1'){
-//                    Algo1 algo1 = new Algo1(graph);
-//                    Double existAns = algo1.checkExist(data);
-//                    if (existAns!=-1.0){
-//                        System.out.println(existAns);
-//                    }
-//                    else{
-//                        ArrayList<String> answer = algo1.algo1(data);
-//                        DecimalFormat df = new DecimalFormat("#.#####");
-//                        String ans = df.format(Double.parseDouble(answer.get(0)));
-//                        System.out.println(ans + ", " + answer.get(1) + ", " + answer.get(2));
-//                    }
+                    Algo1 algo1 = new Algo1(graph);
+                    Double existAns = algo1.checkExist(data);
+                    if (existAns!=-1.0){
+                        System.out.println(existAns);
+                    }
+                    else{
+                        ArrayList<String> answer = algo1.algo1(data);
+                        DecimalFormat df = new DecimalFormat("#.#####");
+                        String ans = df.format(Double.parseDouble(answer.get(0)));
+                        System.out.println(ans + ", " + answer.get(1) + ", " + answer.get(2));
+                    }
                 }
                 else if (algo == '2'){
                     Algo2 algo2 = new Algo2(graph, data);

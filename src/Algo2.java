@@ -23,12 +23,51 @@ public class Algo2 {
         System.out.println("dsfdsfdsfdsfs" + queryVars.toString());
         return queryVars;
     }
+
+    public String getVarValue(String var){
+        String[] q = this.query.split(",");
+        for (String str : q) {
+            String currVar = str.substring(0, str.indexOf('='));
+            if (currVar.equals(var)){
+                System.out.println("Query: " + q + "\n Var: " + var + " Value: " + str.substring(str.indexOf('=')));
+                return str.substring(str.indexOf('=') + 1);
+            }
+        }
+        return "";
+    }
+
+    public HashMap<ArrayList<String>,Double> fitEvidenceCPT(HashMap<ArrayList<String>,Double> cpt, String var, String value){
+        HashMap<ArrayList<String>,Double> factor = new HashMap<>();
+        System.out.println("Factor start: " + cpt);
+        String varValue = var + "=" + value;
+        for (ArrayList<String> cptLine : cpt.keySet()){
+            if (cptLine.contains(varValue)){
+                factor.put(cptLine, cpt.get(cptLine));
+            }
+        }
+        System.out.println("Factor middle: " + factor);
+        for (ArrayList<String> factorLine : factor.keySet()) {
+            factorLine.remove(varValue);
+        }
+        System.out.println("Factor end: " + factor);
+        return factor;
+    }
     public ArrayList<String> algo2(String q){
         System.out.println("Query: " + q);
         ArrayList<String> finalAnswer = new ArrayList<>();
+        ArrayList<String> queryVars = getQueryVars();
+        List<String> evidenceVars = queryVars.subList(1, queryVars.size());
         // First - let's initialize the factors to the CPTs
+        // If CPT contains evidence variable,
+        // We will take only the lines that correspond to the evidence values in the query
         for (Variable var: network.getVars()){
-            HashMap<ArrayList<String>,Double> currCpt = var.getCpt();
+            HashMap<ArrayList<String>,Double> currCpt = new HashMap<>();
+            if (evidenceVars.contains(var.getName())){
+                currCpt = fitEvidenceCPT(var.getCpt(), var.getName(), getVarValue(var.getName()));
+            }
+            else{
+                currCpt = var.getCpt();
+            }
             factors.add(currCpt);
         }
         ArrayList<String> varsNames = network.getVarsNames();
@@ -36,6 +75,12 @@ public class Algo2 {
         Collections.sort(varsNames);
         // Let's check which vars are hidden
         for (String varName : varsNames){
+            System.out.println("Query: " + q);
+            System.out.println("Var Name: " + varName);
+            System.out.println("Factors Size: " + factors.size());
+            for (HashMap<ArrayList<String>,Double> factor : factors){
+                System.out.println("Factor: " + factor);
+            }
             //System.out.println("Varname: " + varName);
             boolean isHidden = true;
             String[] query = q.split(",");
@@ -50,6 +95,10 @@ public class Algo2 {
             if (isHidden) {
                 if (!checkIfFatherOfQueryVar(this.network.getVarByName(varName), getQueryVars())){
                     System.out.println(varName + " is not a parent of query var !" + q);
+                    Set<HashMap<ArrayList<String>, Double>> relevantFactors = getVarFactors(varName);
+                    for (HashMap<ArrayList<String>, Double> factor : relevantFactors){
+                        factors.remove(factor);
+                    }
                     break;
                 }
                 Set<HashMap<ArrayList<String>, Double>> relevantFactors = getVarFactors(varName);
@@ -74,6 +123,9 @@ public class Algo2 {
                             index++;
                         }
                         joinFactors(network.getVarByName(varName), factor1, factor2, relevantFactors);
+                        for (HashMap<ArrayList<String>,Double> factor : factors){
+                            System.out.println("Factor After Join: " + factor);
+                        }
                     }
                 }
                 if (relevantFactors.size() == 1) {
@@ -86,10 +138,71 @@ public class Algo2 {
                 }
             }
         }
+
+
+
+
+
+
+        //System.out.println(checkExist(q));
+        String[]q1 = q.split(",");
+        for (HashMap<ArrayList<String>, Double> factor : factors){
+            for (ArrayList<String> cptLine : factor.keySet()){
+                int count = 0;
+                for (String str : q1){
+                    if (cptLine.contains(str)){
+                        count++;
+                    }
+                }
+                if (count == q1.length){
+                    Double sum = 0.0;
+                    for (Double ans : factor.values()){
+                        sum += ans;
+                    }
+                    String firstVar = q1[0];
+                    System.out.println("First Var: " + firstVar);
+                    System.out.println("sum: " + sum);
+                    for (ArrayList<String> cptL : factor.keySet()){
+                        System.out.println(factor.get(cptL) + "+" + factor.get(cptL)/sum);
+                        factor.replace(cptL, factor.get(cptL), factor.get(cptL)/sum);
+                    }
+                    System.out.println("Final Factor: " + factor);
+                    System.out.println("Answer = " + factor.get(cptLine));
+                }
+            }
+        }
+
+
+
+
+
+
+
+        for (HashMap<ArrayList<String>, Double> factor : factors){
+            System.out.println(factor.toString() + "\n");
+
+        }
         // Now - we have all the factors initialized to the CPTs
         return finalAnswer;
     }
 
+    public Double checkExist(String query){
+        String[]q = query.split(",");
+        for (HashMap<ArrayList<String>, Double> factor : factors){
+            for (ArrayList<String> cptLine : factor.keySet()){
+                int count = 0;
+                for (String str : q){
+                    if (cptLine.contains(str)){
+                        count++;
+                    }
+                }
+                if (count == q.length){
+                    return factor.get(cptLine);
+                }
+            }
+        }
+        return -1.0;
+    }
     public boolean checkIfFatherOfQueryVar2(Variable var, ArrayList<String> queryVars){
         for (String queryVarName : queryVars){
             Variable queryVar = network.getVarByName(queryVarName);
@@ -297,6 +410,7 @@ public class Algo2 {
                     copy_cpt_factor2.remove(varIndex);
 //                    System.out.println(var.getName());
                     if (checkIfLineIsEqual(copy_cpt_factor1, copy_cpt_factor2)){ Double ans = factor.get(cptLine_factor1)+ factor.get(cptLine_factor2);
+                        System.out.println(copy_cpt_factor1.toString() + copy_cpt_factor2.toString());
                         newFactor.put(copy_cpt_factor1, ans);
                     }
                 }
