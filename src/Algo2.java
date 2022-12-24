@@ -46,11 +46,14 @@ public class Algo2 {
             }
         }
         System.out.println("Factor middle: " + factor);
+        HashMap<ArrayList<String>,Double> finalFactor = new HashMap<>();
         for (ArrayList<String> factorLine : factor.keySet()) {
+            Double ans = factor.get(factorLine);
             factorLine.remove(varValue);
+            finalFactor.put(factorLine, ans);
         }
-        System.out.println("Factor end: " + factor);
-        return factor;
+        System.out.println("Factor end: " + finalFactor);
+        return finalFactor;
     }
     public ArrayList<String> algo2(String q){
         System.out.println("Query: " + q);
@@ -140,12 +143,51 @@ public class Algo2 {
         }
 
 
-
-
-
-
-        //System.out.println(checkExist(q));
+        // Now only query var factors are left, let's join them all
+        while (factors.size() > 1) {
+            String queryVar = queryVars.get(0);
+            System.out.println("Query var: " + queryVar);
+            Hashtable<HashMap<ArrayList<String>, Double>, Integer> factorAndSize = getAllFactorsSizes(factors);
+            Hashtable<HashMap<ArrayList<String>, Double>, Integer> twoMinFactors = getTwoMinFactors(factorAndSize);
+            HashMap<ArrayList<String>, Double> factor1 = new HashMap<>();
+            HashMap<ArrayList<String>, Double> factor2 = new HashMap<>();
+            int index = 0;
+            for (HashMap<ArrayList<String>, Double> factor : twoMinFactors.keySet()) {
+                if (index == 0) {
+                    factor1 = factor;
+                } else if (index == 1) {
+                    factor2 = factor;
+                }
+                index++;
+            }
+            joinFactors(network.getVarByName(queryVar), factor1, factor2, factors);
+            for (HashMap<ArrayList<String>, Double> factor : factors) {
+                System.out.println("Factor After Join: " + factor);
+            }
+        }
+        Double sum = 0.0;
+        for (HashMap<ArrayList<String>, Double> factor : factors){
+            for(ArrayList<String> line : factor.keySet()){
+                sum+=factor.get(line);
+            }
+        }
+        for (HashMap<ArrayList<String>, Double> factor : factors) {
+            for (ArrayList<String> line : factor.keySet()) {
+                factor.replace(line, factor.get(line), factor.get(line)/sum);
+            }
+        }
         String[]q1 = q.split(",");
+        String queryVarValue = q1[0];
+        System.out.println("queryVarValue: " + queryVarValue);
+        for (HashMap<ArrayList<String>, Double> factor : factors) {
+            for (ArrayList<String> line : factor.keySet()) {
+                if (line.contains(queryVarValue)){
+                    System.out.println("ANS===" + factor.get(line));
+                }
+            }
+        }
+        //System.out.println(checkExist(q));
+        //String[]q1 = q.split(",");
         for (HashMap<ArrayList<String>, Double> factor : factors){
             for (ArrayList<String> cptLine : factor.keySet()){
                 int count = 0;
@@ -155,7 +197,7 @@ public class Algo2 {
                     }
                 }
                 if (count == q1.length){
-                    Double sum = 0.0;
+
                     for (Double ans : factor.values()){
                         sum += ans;
                     }
@@ -358,7 +400,8 @@ public class Algo2 {
     public void joinFactors(Variable var, HashMap<ArrayList<String>,Double> factor1,
                                  HashMap<ArrayList<String>,Double> factor2, Set<HashMap<ArrayList<String>, Double>> relevantFactors){
         ArrayList<String> commonVars = getCommonVars(factor1, factor2);
-        System.out.println(commonVars.toString());
+        System.out.println("Common Vars: " + commonVars.toString());
+        System.out.println("Two factors to join: " + factor1 + "\n" + factor2);
         HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
         for (ArrayList<String> cptLine_factor1 : factor1.keySet()) {
             for (ArrayList<String> cptLine_factor2 : factor2.keySet()) {
