@@ -20,7 +20,7 @@ public class Algo2 {
             str = str.substring(0, str.indexOf('='));
             queryVars.add(str);
         }
-        System.out.println("dsfdsfdsfdsfs" + queryVars.toString());
+        System.out.println("QueryVars: " + queryVars.toString());
         return queryVars;
     }
 
@@ -29,34 +29,109 @@ public class Algo2 {
         for (String str : q) {
             String currVar = str.substring(0, str.indexOf('='));
             if (currVar.equals(var)){
-                System.out.println("Query: " + q + "\n Var: " + var + " Value: " + str.substring(str.indexOf('=')));
+               // System.out.println("Query: " + q + "\n Var: " + var + " Value: " + str.substring(str.indexOf('=')));
                 return str.substring(str.indexOf('=') + 1);
             }
         }
         return "";
     }
 
-    public HashMap<ArrayList<String>,Double> fitEvidenceCPT(HashMap<ArrayList<String>,Double> cpt, String var, String value){
-        HashMap<ArrayList<String>,Double> factor = new HashMap<>();
-        System.out.println("Factor start: " + cpt);
-        String varValue = var + "=" + value;
+    public ArrayList<String> whichEvidenceVarsContains(HashMap<ArrayList<String>,Double> cpt, List<String> evidenceVars){
+        ArrayList<String> evidenceContains = new ArrayList<>();
         for (ArrayList<String> cptLine : cpt.keySet()){
-            if (cptLine.contains(varValue)){
-                factor.put(cptLine, cpt.get(cptLine));
+            for (String lineValue : cptLine){
+                for (String evidenceVar : evidenceVars){
+                    if(lineValue.contains(evidenceVar)){
+                        evidenceContains.add(evidenceVar);
+                    }
+                }
+                break;
+            }
+            break;
+        }
+        System.out.println("FactorEvi: " + cpt);
+        System.out.println("Contains: " + evidenceContains);
+        return evidenceContains;
+    }
+
+    public HashMap<ArrayList<String>,Double> fitEvidenceCPT2(HashMap<ArrayList<String>,Double> cpt, ArrayList<String> evidenceContains) {
+        HashMap<ArrayList<String>,Double> factor = new HashMap<>();
+        System.out.println("Cpt before: " + cpt);
+        System.out.println("Evidence contains: " + evidenceContains);
+        for (ArrayList<String> cptLine : cpt.keySet()){
+            int count = 0;
+            for (String evidenceVar : evidenceContains){
+                String evidenceVarValue = evidenceVar + "=" + getVarValue(evidenceVar);
+                if (cptLine.contains(evidenceVarValue)){
+                    count+=1;
+                }
+            }
+            if (count==evidenceContains.size()){
+                ArrayList<String> newLine = new ArrayList<>();
+                for (String lineValue : cptLine){
+                    boolean isEvidence = false;
+                    for (String evidenceVar : evidenceContains){
+                        String evidenceVarValue = evidenceVar + "=" + getVarValue(evidenceVar);
+                        if (lineValue.equals(evidenceVarValue)){
+                            isEvidence = true;
+                        }
+                    }
+                    if (!isEvidence){
+                        newLine.add(lineValue);
+                    }
+                }
+                factor.put(newLine, cpt.get(cptLine));
             }
         }
-        System.out.println("Factor middle: " + factor);
-        HashMap<ArrayList<String>,Double> finalFactor = new HashMap<>();
-        for (ArrayList<String> factorLine : factor.keySet()) {
-            Double ans = factor.get(factorLine);
-            factorLine.remove(varValue);
-            finalFactor.put(factorLine, ans);
+        System.out.println("New Factor now: " + factor);
+        return factor;
+    }
+
+    public void fitEvidenceCPT(HashMap<ArrayList<String>,Double> cpt, String var, String value){
+        String varValue = var + "=" + value;
+        System.out.println("CPTTTT: " + cpt);
+        cpt.entrySet().removeIf(entry->!entry.getKey().contains(varValue));
+        System.out.println("CPTTTT Afterrrr: " + cpt);
+        HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
+        for (ArrayList<String> cptLine : cpt.keySet()){
+            if (cptLine.contains(varValue)){
+                newFactor.put(cptLine, cpt.get(cptLine));
+            }
         }
-        System.out.println("Factor end: " + finalFactor);
-        return finalFactor;
+        HashMap<ArrayList<String>,Double> finalFactor = new HashMap<>();
+        for (ArrayList<String> factorLine : newFactor.keySet()) {
+            Double ans = newFactor.get(factorLine);
+            ArrayList<String> newLine = new ArrayList<>();
+            for (String varV : factorLine){
+                if (!varV.equals(varValue)){
+                    newLine.add(varV);
+                }
+            }
+            finalFactor.put(newLine, ans);
+        }
+        factors.remove(cpt);
+        factors.add(finalFactor);
+//        HashMap<ArrayList<String>,Double> factor = new HashMap<>();
+//        for (ArrayList<String> cptLine : cpt.keySet()){
+//            if (cptLine.contains(varValue)){
+//                factor.put(cptLine, cpt.get(cptLine));
+//            }
+//        }
+//        HashMap<ArrayList<String>,Double> finalFactor = new HashMap<>();
+//        for (ArrayList<String> factorLine : factor.keySet()) {
+//            Double ans = factor.get(factorLine);
+//            ArrayList<String> newLine = new ArrayList<>();
+//            for (String varV : factorLine){
+//                if (!varV.equals(varValue)){
+//                    newLine.add(varV);
+//                }
+//            }
+//            finalFactor.put(newLine, ans);
+//        }
+//        return finalFactor;
     }
     public ArrayList<String> algo2(String q){
-        System.out.println("Query: " + q);
+        //System.out.println("Query: " + q);
         ArrayList<String> finalAnswer = new ArrayList<>();
         ArrayList<String> queryVars = getQueryVars();
         List<String> evidenceVars = queryVars.subList(1, queryVars.size());
@@ -64,26 +139,64 @@ public class Algo2 {
         // If CPT contains evidence variable,
         // We will take only the lines that correspond to the evidence values in the query
         for (Variable var: network.getVars()){
+            HashMap<ArrayList<String>,Double> varCpt = var.getCpt();
+            System.out.println("VAR CPT: " + varCpt);
             HashMap<ArrayList<String>,Double> currCpt = new HashMap<>();
-            if (evidenceVars.contains(var.getName())){
-                currCpt = fitEvidenceCPT(var.getCpt(), var.getName(), getVarValue(var.getName()));
+            // If it's an evidence var and it's CPT conatains only him we can ignore it
+            if (evidenceVars.contains(var.getName()) && var.getCpt().size()==var.getValues().size()){
+                System.out.println("CPT:" + var.getCpt());
+                continue;
             }
-            else{
+            // If cpt contains evidence variables
+            if (whichEvidenceVarsContains(varCpt, evidenceVars).size()>0){
+                currCpt = fitEvidenceCPT2(varCpt, whichEvidenceVarsContains(varCpt, evidenceVars));
+            }
+//            if (evidenceVars.contains(var.getName())){
+//                //System.out.println("CPT: " + var.getCpt());
+//                currCpt = fitEvidenceCPT(var.getCpt(), var.getName(), getVarValue(var.getName()));
+//            }
+            // If is not and ancestor of query/evidence var so we don't take it
+            if (!getQueryVars().contains(var.getName()) && !checkIfFatherOfQueryVar(var, getQueryVars())){
+                System.out.println(var.getName() + " is not a parent of query var !" + q);
+                System.out.println("It's CPT: " + var.getCpt());
+                continue;
+            }
+            else if (whichEvidenceVarsContains(varCpt, evidenceVars).size()==0){
+                System.out.println("Checking " + var.getCpt());
                 currCpt = var.getCpt();
             }
             factors.add(currCpt);
         }
+        for (HashMap<ArrayList<String>,Double> factor : factors) {
+            System.out.println("Factor: " + factor);
+        }
+//        for (HashMap<ArrayList<String>,Double> factor : factors){
+//            for (String evidenceVar : evidenceVars){
+//                String[] que = this.query.split(",");
+//                String evidenceValue = "";
+//                for (String queryValue : que){
+//                    if (queryValue.contains(evidenceVar)){
+//                        evidenceValue = queryValue.substring(queryValue.indexOf("=") + 1);
+//                    }
+//                }
+//                fitEvidenceCPT(factor, evidenceVar,evidenceValue);
+//            }
+//        }
+//        for (HashMap<ArrayList<String>,Double> factor : factors) {
+//            System.out.println("Factor After: " + factor);
+//        }
         ArrayList<String> varsNames = network.getVarsNames();
         // Now, we want to eliminate hidden vars ordered by ABC
         Collections.sort(varsNames);
         // Let's check which vars are hidden
+        factors.removeIf(entries->entries.size()==1);
         for (String varName : varsNames){
-            System.out.println("Query: " + q);
-            System.out.println("Var Name: " + varName);
-            System.out.println("Factors Size: " + factors.size());
-            for (HashMap<ArrayList<String>,Double> factor : factors){
-                System.out.println("Factor: " + factor);
-            }
+//            System.out.println("Query: " + q);
+//            System.out.println("Var Name: " + varName);
+//            System.out.println("Factors Size: " + factors.size());
+//            for (HashMap<ArrayList<String>,Double> factor : factors){
+//                System.out.println("Factor: " + factor);
+//            }
             //System.out.println("Varname: " + varName);
             boolean isHidden = true;
             String[] query = q.split(",");
@@ -96,14 +209,14 @@ public class Algo2 {
                 }
             }
             if (isHidden) {
-                if (!checkIfFatherOfQueryVar(this.network.getVarByName(varName), getQueryVars())){
-                    System.out.println(varName + " is not a parent of query var !" + q);
-                    Set<HashMap<ArrayList<String>, Double>> relevantFactors = getVarFactors(varName);
-                    for (HashMap<ArrayList<String>, Double> factor : relevantFactors){
-                        factors.remove(factor);
-                    }
-                    break;
-                }
+//                if (!checkIfFatherOfQueryVar(this.network.getVarByName(varName), getQueryVars())){
+//                    System.out.println(varName + " is not a parent of query var !" + q);
+//                    Set<HashMap<ArrayList<String>, Double>> relevantFactors = getVarFactors(varName);
+//                    for (HashMap<ArrayList<String>, Double> factor : relevantFactors){
+//                        factors.remove(factor);
+//                    }
+//                    break;
+//                }
                 Set<HashMap<ArrayList<String>, Double>> relevantFactors = getVarFactors(varName);
                 while (relevantFactors.size() > 1) {
                     System.out.println("Current Size: " + relevantFactors.size());
