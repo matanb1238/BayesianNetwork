@@ -44,7 +44,7 @@ public class Algo2 {
             // If cpt contains evidence variables
             if (whichEvidenceVarsContains(varCpt, evidenceVars).size()>0){
                 System.out.println("This CPT contains evidence variables");
-                currCpt = fitEvidenceCPT2(varCpt, whichEvidenceVarsContains(varCpt, evidenceVars));
+                currCpt = fitEvidenceCPT(varCpt, whichEvidenceVarsContains(varCpt, evidenceVars));
             }
 
             // If is not and ancestor of query/evidence var so we don't take it
@@ -71,6 +71,7 @@ public class Algo2 {
         System.out.println("Vars order after sort: " + varsNames.toString());
         // Let's check which vars are hidden
         factors.removeIf(entries->entries.size()==1);
+        System.out.println("\n------STEP 2 - for every hidden var we will join its factors and then eliminate it------");
         for (String varName : varsNames){
             boolean isHidden = true; //bool that indicates if hidden
             String[] query = q.split(",");
@@ -82,7 +83,6 @@ public class Algo2 {
                 }
             }
             // If var is hidden
-            System.out.println("\n------STEP 2 - for every hidden var we will join its factors------");
             if (isHidden) {
                 System.out.println("Hidden Var: "+ varName);
                 // We want only the factors that contains the current hidden variable
@@ -98,11 +98,11 @@ public class Algo2 {
                     HashMap<ArrayList<String>, Double> factor2 = new HashMap<>();
                     int index = 0;
                     for (HashMap<ArrayList<String>, Double> factor : twoMinFactors.keySet()){
-                        if (index == 0){ // if the smallest
-                            factor1 = factor;
-                        }
-                        else if (index == 1){ // if the second smallest
+                        if (index == 0){ // if the second smallest (last in - first out -> second smallest joined last)
                             factor2 = factor;
+                        }
+                        else if (index == 1){ // if the smallest (joined first -> first in last out)
+                            factor1 = factor;
                         }
                         index++;
                     }
@@ -123,7 +123,10 @@ public class Algo2 {
             }
         }
 
-
+        System.out.println("------STEP 3 - join the query variable's factors left if there are more than 1 left------");
+        for (HashMap<ArrayList<String>, Double> factor : factors) {
+            System.out.println("Query var factor: " + factor);
+        }
         // Now only query var factors are left, let's join them all
         while (factors.size() > 1) {
             String queryVar = queryVars.get(0);
@@ -142,9 +145,6 @@ public class Algo2 {
                 index++;
             }
             joinFactors(factor1, factor2, factors);
-            for (HashMap<ArrayList<String>, Double> factor : factors) {
-                System.out.println("Factor After Join: " + factor);
-            }
         }
         Double sum = 0.0;
         for (HashMap<ArrayList<String>, Double> factor : factors){
@@ -163,47 +163,11 @@ public class Algo2 {
         for (HashMap<ArrayList<String>, Double> factor : factors) {
             for (ArrayList<String> line : factor.keySet()) {
                 if (line.contains(queryVarValue)){
-                    System.out.println("ANS===" + factor.get(line));
+                    System.out.println("Answer= " + factor.get(line));
                 }
             }
         }
-        for (HashMap<ArrayList<String>, Double> factor : factors){
-            for (ArrayList<String> cptLine : factor.keySet()){
-                int count = 0;
-                for (String str : q1){
-                    if (cptLine.contains(str)){
-                        count++;
-                    }
-                }
-                if (count == q1.length){
-
-                    for (Double ans : factor.values()){
-                        sum += ans;
-                    }
-                    String firstVar = q1[0];
-                    System.out.println("First Var: " + firstVar);
-                    System.out.println("sum: " + sum);
-                    for (ArrayList<String> cptL : factor.keySet()){
-                        System.out.println(factor.get(cptL) + "+" + factor.get(cptL)/sum);
-                        factor.replace(cptL, factor.get(cptL), factor.get(cptL)/sum);
-                    }
-                    System.out.println("Final Factor: " + factor);
-                    System.out.println("Answer = " + factor.get(cptLine));
-                }
-            }
-        }
-
-
-
-
-
-
-
-        for (HashMap<ArrayList<String>, Double> factor : factors){
-            //System.out.println(factor.toString() + "\n");
-
-        }
-        // Now - we have all the factors initialized to the CPTs
+        // return the answer
         return finalAnswer;
     }
 
@@ -244,19 +208,18 @@ public class Algo2 {
         return evidenceContains;
     }
 
-    public HashMap<ArrayList<String>,Double> fitEvidenceCPT2(HashMap<ArrayList<String>,Double> cpt, ArrayList<String> evidenceContains) {
+    // Function which fitting factor with only the lines that correspond to the evidence variables' query values
+    public HashMap<ArrayList<String>,Double> fitEvidenceCPT(HashMap<ArrayList<String>,Double> cpt, ArrayList<String> evidenceContains) {
         HashMap<ArrayList<String>,Double> factor = new HashMap<>();
-//        System.out.println("Cpt before: " + cpt);
-//        System.out.println("Evidence contains: " + evidenceContains);
         for (ArrayList<String> cptLine : cpt.keySet()){
             int count = 0;
             for (String evidenceVar : evidenceContains){
                 String evidenceVarValue = evidenceVar + "=" + getVarValue(evidenceVar);
-                if (cptLine.contains(evidenceVarValue)){
+                if (cptLine.contains(evidenceVarValue)){ //
                     count+=1;
                 }
             }
-            if (count==evidenceContains.size()){
+            if (count==evidenceContains.size()){ // indicates that line is good
                 ArrayList<String> newLine = new ArrayList<>();
                 for (String lineValue : cptLine){
                     boolean isEvidence = false;
@@ -490,26 +453,62 @@ public class Algo2 {
         relevantFactors.remove(factor1);
         relevantFactors.remove(factor2);
         System.out.println("Factor after join: " + newFactor);
+        System.out.println("Factor size: " + newFactor.size());
     }
 
-
+    // Function that eliminates a var from a factor
     public void eliminateFactor (Variable var, HashMap<ArrayList<String>,Double> factor, Set<HashMap<ArrayList<String>, Double>> relevantFactors){
         int varIndex = getIndexInFactor(var, factor);
+        Set<ArrayList<String>> alreadyExist = new HashSet<>();
         HashMap<ArrayList<String>,Double> newFactor = new HashMap<>();
+        int size = var.getValues().size();
+        int count = 0;
+        Double ans = 0.0;
+        if (this.query.equals("D1=T,C2=v1,C3=F") & var.getName().equals("B0")){
+            int i=1;
+        }
+//        for (ArrayList<String> cptLine_factor1 : factor.keySet()){
+//            Double ans = factor.get(cptLine_factor1);
+//            ArrayList<String> copy_cpt_factor1 = new ArrayList<>(cptLine_factor1);
+//            copy_cpt_factor1.remove(varIndex);
+//            if (alreadyExist.contains(copy_cpt_factor1)){
+//                continue;
+//            }
+//            for (int index=1; index<size-1; index++){
+//                for (ArrayList<String> cptLine_factor2 : factor.keySet()) {
+//                    if (cptLine_factor1 != cptLine_factor2){
+//                        ArrayList<String> copy_cpt_factor2 = new ArrayList<>(cptLine_factor2);
+//                        System.out.println(copy_cpt_factor1);
+//                        copy_cpt_factor2.remove(varIndex);
+//                        if (checkIfLineIsEqual(copy_cpt_factor1, copy_cpt_factor2)){
+//                            ans += factor.get(cptLine_factor2);
+//                            //System.out.println(copy_cpt_factor1.toString() + copy_cpt_factor2.toString());
+//                        }
+//                    }
+//                }
+//            }
+//            newFactor.put(copy_cpt_factor1, ans);
+//            alreadyExist.add(copy_cpt_factor1);
+//        }
         for (ArrayList<String> cptLine_factor1 : factor.keySet()){
+            ArrayList<String> newLine = new ArrayList<>();
+            ans = factor.get(cptLine_factor1);
             for (ArrayList<String> cptLine_factor2 : factor.keySet()) {
                 if (cptLine_factor1 != cptLine_factor2){
                     ArrayList<String> copy_cpt_factor1 = new ArrayList<>(cptLine_factor1);
+                    newLine = copy_cpt_factor1;
                     ArrayList<String> copy_cpt_factor2 = new ArrayList<>(cptLine_factor2);
                     copy_cpt_factor1.remove(varIndex);
                     copy_cpt_factor2.remove(varIndex);
 //                    System.out.println(var.getName());
-                    if (checkIfLineIsEqual(copy_cpt_factor1, copy_cpt_factor2)){ Double ans = factor.get(cptLine_factor1)+ factor.get(cptLine_factor2);
+                    if (checkIfLineIsEqual(copy_cpt_factor1, copy_cpt_factor2)){
+                        ans += factor.get(cptLine_factor2);
                         //System.out.println(copy_cpt_factor1.toString() + copy_cpt_factor2.toString());
-                        newFactor.put(copy_cpt_factor1, ans);
+
                     }
                 }
             }
+            newFactor.put(newLine, ans);
         }
         this.factors.remove(factor);
         this.factors.add(newFactor);
