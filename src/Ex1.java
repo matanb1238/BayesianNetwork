@@ -145,7 +145,7 @@ class Ex1 {
                     Algo2 algo2 = new Algo2(graph, data);
                     Double existAns = algo2.checkExist(data);
                     if (existAns!=-1.0){
-                        System.out.println(existAns + ", 0, 0");
+                        System.out.println(existAns + ",0,0");
                         ArrayList<String> answer = new ArrayList<>();
                         answer.add(String.valueOf(existAns));
                         answer.add("0");
@@ -158,14 +158,14 @@ class Ex1 {
                         DecimalFormat df = new DecimalFormat("#.#####");
                         String ans = df.format(Double.parseDouble(answer.get(0)));
                         FileWriter myWriter = new FileWriter(output);
-                        myWriter.write(ans + ", " + answer.get(1) + ", " + answer.get(2) + "\n");
+                        myWriter.write(ans + "," + answer.get(1) + "," + answer.get(2) + "\n");
                     }
                 }
                 else if (algo == '3'){
                     Algo3 algo3 = new Algo3(graph, data);
                     Double existAns = algo3.checkExist(data);
                     if (existAns!=-1.0){
-                        System.out.println(existAns + ", 0, 0");
+                        System.out.println(existAns + ",0,0");
                         ArrayList<String> answer = new ArrayList<>();
                         answer.add(String.valueOf(existAns));
                         answer.add("0");
@@ -178,15 +178,22 @@ class Ex1 {
                         DecimalFormat df = new DecimalFormat("#.#####");
                         String ans = df.format(Double.parseDouble(answer.get(0)));
                         FileWriter myWriter = new FileWriter(output);
-                        myWriter.write(ans + ", " + answer.get(1) + ", " + answer.get(2) + "\n");
+                        myWriter.write(ans + "," + answer.get(1) + "," + answer.get(2) + "\n");
                     }
                 }
             }
             FileWriter myWriter = new FileWriter(output);
+            int index = 0;
             for (ArrayList<String> answer : answers){
+                index++;
                 DecimalFormat df = new DecimalFormat("#.#####");
                 String ans = df.format(Double.parseDouble(answer.get(0)));
-                myWriter.write(ans + ", " + answer.get(1) + ", " + answer.get(2) + "\n");
+                if (index!=answers.size()) {
+                    myWriter.write(ans + "," + answer.get(1) + "," + answer.get(2) + "\n");
+                }
+                else{
+                    myWriter.write(ans + "," + answer.get(1) + "," + answer.get(2));
+                }
             }
             myWriter.close();
         } catch (FileNotFoundException | ParserConfigurationException e) {

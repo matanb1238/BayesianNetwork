@@ -25,12 +25,6 @@ public class Variable {
         cpt = new HashMap<>();
     }
 
-    public Variable(Variable other){
-        this.name = other.name;
-        this.parents = other.parents;
-        this.values = other.values;
-        this.cpt = other.cpt;
-    }
     public String getName(){
         return name;
     }
@@ -40,15 +34,14 @@ public class Variable {
     public void setValues(ArrayList<String> values) {
         this.values = values;
     }
-    public ArrayList<Variable> getParents(){
-        return parents;
-    }
+    public ArrayList<Variable> getParents(){ return parents; }
     public void setParents(ArrayList<Variable> parents) {
         this.parents = parents;
     }
     public HashMap<ArrayList<String>,Double> getCpt(){return cpt;}
-    public boolean checkIfValueExist(String value){return this.getValues().contains(value);}
-    public void setCpt(String[] values){
+    //public boolean checkIfValueExist(String value){return this.getValues().contains(value);}
+
+    public void setCpt(String[] values){ // setting the CPT
         int parentsListSize = this.parents.size();
         ArrayList<Variable> reversedParents = new ArrayList<>();
         // Reversed loop on the parents
@@ -61,17 +54,14 @@ public class Variable {
         tableOfLastValues.put(this, this.getValues().get(0));
         for (int j=0; j<reversedParents.size(); j++){
             Variable parent = reversedParents.get(j);
-            tableOfLastValues.put(parent, parent.getValues().get(0));
+            tableOfLastValues.put(parent, parent.getValues().get(0)); // adding to table
         }
         int count = 0;
         for (int i=0; i<values.length; i++){
             String curr_value = values[i];
             System.out.println(curr_value);
             ArrayList<String> currentCPTLine = new ArrayList<>();
-            currentCPTLine.add(this.getName() + "=" + tableOfLastValues.get(this));
-            if (curr_value.equals("0.5")){
-                System.out.println(currentCPTLine);
-            }
+            currentCPTLine.add(this.getName() + "=" + tableOfLastValues.get(this)); // adding to CPT
             count++;
             int indexOfLastNodeValue = this.getValues().indexOf(tableOfLastValues.get(this));
             tableOfLastValues.remove(this);

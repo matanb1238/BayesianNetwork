@@ -132,36 +132,37 @@ public class Algo1 {
             Variable var = network.getVarByName(varName);
             hiddenValuesVarsCount *= var.getValues().size();
         }
+        // Starting iterating
         for (int i=0; i<hiddenValuesVarsCount; i++){
-            for (int j=0; j<hiddenVarsNames.size(); j++) {
+            for (int j=0; j<hiddenVarsNames.size(); j++) { // for every hidden var
                 int valuesCount = 1;
                 for (int x=0; x<j; x++){
-                    String currVarName = hiddenVarsNames.get(x);
+                    String currVarName = hiddenVarsNames.get(x); // get hidden var name
                     Variable currVar = network.getVarByName(currVarName);
-                    valuesCount *= currVar.getValues().size();
+                    valuesCount *= currVar.getValues().size(); // getting the valuesCount till that point (it's switching it's values according to the whole values count until now)
                 }
                 String varName = hiddenVarsNames.get(j);
                 Variable hiddenVar = network.getVarByName(varName);
-                if (i % valuesCount == 0){
+                if (i % valuesCount == 0){ // indicates of switching value
                     String currValue = query.get(hiddenVar);
                     int valueIndex = hiddenVar.getValues().indexOf(currValue);
                     String newValue = "";
-                    if (valueIndex == hiddenVar.getValues().size()-1){
+                    if (valueIndex == hiddenVar.getValues().size()-1){ // if the last value -> get the first
                         newValue = hiddenVar.getValues().get(0);
                     }
                     else{
-                        newValue = hiddenVar.getValues().get(valueIndex + 1);
+                        newValue = hiddenVar.getValues().get(valueIndex + 1); // else -> get the next one
                     }
                     query.remove(hiddenVar);
                     query.put(hiddenVar, newValue);
                 }
             }
             ArrayList<String> currFinalAnswerList = calculateQuery(query, plusCount, multCount);
-            Double ans = Double.parseDouble(currFinalAnswerList.get(0));
+            Double ans = Double.parseDouble(currFinalAnswerList.get(0)); // curr query ans
             finalAnswer += ans;
             if (plusIndex!=0){
-                int plusCounter = Integer.valueOf(currFinalAnswerList.get(1));
-                plusCount = Integer.toString(++plusCounter);
+                int plusCounter = Integer.valueOf(currFinalAnswerList.get(1)); // updating plus counter
+                plusCount = Integer.toString(++plusCounter); // adding one
             }
             plusIndex++;
             multCount = currFinalAnswerList.get(2);
@@ -186,8 +187,6 @@ public class Algo1 {
             if (var.getParents().size()==0){
                 ArrayList<String> valueArrList = new ArrayList<>();
                 valueArrList.add(var.getName() + "=" + query.get(var));
-                for (Variable qVar : query.keySet()){
-                }
                 finalAns *= var.getCpt().get(valueArrList);
                 if (multIndex!=0){ // If not first multiplying
                     multCounter++;

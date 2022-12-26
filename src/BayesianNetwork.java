@@ -7,17 +7,12 @@ public class BayesianNetwork {
     public BayesianNetwork(){
         vars = new ArrayList<>();
     }
-//    public BayesianNetwork(Variable[] graph) {
-//        this.graph = graph;
-//        varNames = new ArrayList<>();
-//    }
-//    public Variable[] getGraph(){return graph;}
 
     public ArrayList<Variable> getVars(){return vars;}
 
     public void addVar(Variable var){vars.add(var);}
 
-    public ArrayList<String> getVarsNames(){
+    public ArrayList<String> getVarsNames(){ // get the variables' names
         ArrayList<String> varsNames = new ArrayList<>();
         for (Variable var : vars){
             varsNames.add(var.getName());
