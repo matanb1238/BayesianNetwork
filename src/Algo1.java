@@ -8,12 +8,14 @@ public class Algo1 {
     public Algo1(BayesianNetwork network){
         this.network = network;
     }
+
+    // Function which check if the query answer already exist in the network
     public Double checkExist(String q){
+        System.out.println("Q: " + q);
         boolean bool = true;
         String[] query = q.split(","); // Splitting the query (we want to get into each one of the vars easily)
         String nodeName = Character.toString(query[0].charAt(0)); // The node is the first one
         Variable node = network.getVarByName(nodeName);
-        System.out.println(q);
         for (ArrayList<String> cptLine : node.getCpt().keySet()){
             bool = true;
             if (cptLine.get(0).equals(query[0])){
@@ -35,50 +37,33 @@ public class Algo1 {
         }
         return -1.0;
     }
+
+    // Starting Algo1
     public ArrayList<String> algo1(String q) {
+        System.out.println("-----Starting Algo1------\n" + q);
         String[] query = q.split(",");
         ArrayList<String> varsNames = network.getVarsNames();
         ArrayList<String> queryVars = new ArrayList<>();
         // Adding the variables
         for (String value : query) {
-            int index = 0;
-            for (int i=0; i<value.length(); i++){
-                if (value.charAt(i) == '='){
-                    index = i;
-                }
-                else{
-                    continue;
-                }
-                break;
-            }
-            queryVars.add(value.substring(0, index));
+            queryVars.add(value.substring(0, value.indexOf("=")));
         }
         ArrayList<String> hiddenVarsNames = new ArrayList<>();
         // Adding hidden vars
         for (String var : varsNames) {
-            if (!queryVars.contains(var)) {
+            if (!queryVars.contains(var)) { // if not in query => hidden
                 hiddenVarsNames.add(var);
             }
         }
         // Arraylist of the final query - first we are adding the query and evidence vars and values
         Hashtable<Variable, String> finalQuery = new Hashtable<>();
         for (String value : query) {
-            int index = 0;
-            for (int i=0; i<value.length(); i++){
-                if (value.charAt(i) == '='){
-                    index = i;
-                }
-                else{
-                    continue;
-                }
-                break;
-            }
-            String varName = value.substring(0, index);
+            String varName = value.substring(0, value.indexOf("=")); // only the variable name
             Variable var = network.getVarByName(varName);
-            String varValue = value.substring(index+1, value.length());
+            String varValue = value.substring(value.indexOf("=")+1); // the value
             finalQuery.put(var, varValue);
         }
-
+        // Adding the hidden variables now
         for (String hiddenVarName : hiddenVarsNames) {
             Variable hiddenVar = network.getVarByName(hiddenVarName);
             String firstValue = hiddenVar.getValues().get(0);
@@ -126,6 +111,7 @@ public class Algo1 {
                 oldValues.add(newValue);
                 oldValue=newValue;
                 System.out.print("Check if newvalue=oldvalue is neccessary");
+                System.out.print("Answer Algo1= " + Double.toString(mone/mechane) + ", " + plusCount + ", " + multCount);
             }
         }
         ArrayList<String> finalAnswerList = new ArrayList<>();
@@ -200,6 +186,8 @@ public class Algo1 {
             if (var.getParents().size()==0){
                 ArrayList<String> valueArrList = new ArrayList<>();
                 valueArrList.add(var.getName() + "=" + query.get(var));
+                for (Variable qVar : query.keySet()){
+                }
                 finalAns *= var.getCpt().get(valueArrList);
                 if (multIndex!=0){ // If not first multiplying
                     multCounter++;

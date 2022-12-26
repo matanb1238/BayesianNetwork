@@ -3,13 +3,11 @@ import org.w3c.dom.Document;
 import javax.xml.parsers.*;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Scanner;
+import java.util.*;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
 import org.w3c.dom.Document;
@@ -22,6 +20,8 @@ class Ex1 {
     public static void main(String[] args) {
         try {
             File myObj = new File("input.txt"); //Find the file
+            File output = new File("output.txt");
+            ArrayList<ArrayList<String>> answers = new ArrayList<>();
             Scanner myReader = new Scanner(myObj);
             int count = 0;
             BayesianNetwork graph = new BayesianNetwork();
@@ -120,26 +120,75 @@ class Ex1 {
                     data = data.replace('|', ',');
                     data = data.substring(2, data.length()-3);
                 }
+                System.out.println("\nALGO IS " + algo);
                 if (algo == '1'){
                     Algo1 algo1 = new Algo1(graph);
                     Double existAns = algo1.checkExist(data);
                     if (existAns!=-1.0){
-                        System.out.println(existAns);
+                        System.out.println(existAns + ", 0, 0");
+                        ArrayList<String> answer = new ArrayList<>();
+                        answer.add(String.valueOf(existAns));
+                        answer.add("0");
+                        answer.add("0");
+                        answers.add(answer);
                     }
                     else{
                         ArrayList<String> answer = algo1.algo1(data);
+                        answers.add(answer);
                         DecimalFormat df = new DecimalFormat("#.#####");
                         String ans = df.format(Double.parseDouble(answer.get(0)));
-                        System.out.println(ans + ", " + answer.get(1) + ", " + answer.get(2));
+                        FileWriter myWriter = new FileWriter(output);
+                        myWriter.write(ans + ", " + answer.get(1) + ", " + answer.get(2) + "\n");
                     }
                 }
                 else if (algo == '2'){
                     Algo2 algo2 = new Algo2(graph, data);
-                    algo2.algo2(data);
+                    Double existAns = algo2.checkExist(data);
+                    if (existAns!=-1.0){
+                        System.out.println(existAns + ", 0, 0");
+                        ArrayList<String> answer = new ArrayList<>();
+                        answer.add(String.valueOf(existAns));
+                        answer.add("0");
+                        answer.add("0");
+                        answers.add(answer);
+                    }
+                    else {
+                        ArrayList<String> answer = algo2.algo2(data);
+                        answers.add(answer);
+                        DecimalFormat df = new DecimalFormat("#.#####");
+                        String ans = df.format(Double.parseDouble(answer.get(0)));
+                        FileWriter myWriter = new FileWriter(output);
+                        myWriter.write(ans + ", " + answer.get(1) + ", " + answer.get(2) + "\n");
+                    }
                 }
-
-
+                else if (algo == '3'){
+                    Algo3 algo3 = new Algo3(graph, data);
+                    Double existAns = algo3.checkExist(data);
+                    if (existAns!=-1.0){
+                        System.out.println(existAns + ", 0, 0");
+                        ArrayList<String> answer = new ArrayList<>();
+                        answer.add(String.valueOf(existAns));
+                        answer.add("0");
+                        answer.add("0");
+                        answers.add(answer);
+                    }
+                    else {
+                        ArrayList<String> answer = algo3.algo3(data);
+                        answers.add(answer);
+                        DecimalFormat df = new DecimalFormat("#.#####");
+                        String ans = df.format(Double.parseDouble(answer.get(0)));
+                        FileWriter myWriter = new FileWriter(output);
+                        myWriter.write(ans + ", " + answer.get(1) + ", " + answer.get(2) + "\n");
+                    }
+                }
             }
+            FileWriter myWriter = new FileWriter(output);
+            for (ArrayList<String> answer : answers){
+                DecimalFormat df = new DecimalFormat("#.#####");
+                String ans = df.format(Double.parseDouble(answer.get(0)));
+                myWriter.write(ans + ", " + answer.get(1) + ", " + answer.get(2) + "\n");
+            }
+            myWriter.close();
         } catch (FileNotFoundException | ParserConfigurationException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();

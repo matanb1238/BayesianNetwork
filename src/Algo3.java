@@ -3,14 +3,14 @@ import java.nio.file.FileAlreadyExistsException;
 import java.text.DecimalFormat;
 import java.util.*;
 
-public class Algo2 {
+public class Algo3 {
     private BayesianNetwork network;
     private Set<HashMap<ArrayList<String>,Double>> factors;
     private String query;
     private int plusCount;
     private  int multCount;
 
-    public Algo2(BayesianNetwork network, String query){
+    public Algo3(BayesianNetwork network, String query){
         this.network = network;
         this.factors = new HashSet<>();
         this.query = query;
@@ -19,8 +19,8 @@ public class Algo2 {
     }
     public Set<HashMap<ArrayList<String>,Double>> getFactors(){return factors;}
 
-    public ArrayList<String> algo2(String q){
-        System.out.println("\n------Starting ALGO 2--------");
+    public ArrayList<String> algo3(String q){
+        System.out.println("\n------Starting ALGO 3--------");
         System.out.println("Query is: " + q);
         ArrayList<String> finalAnswer = new ArrayList<>();
         ArrayList<String> queryVars = getQueryVars();
@@ -68,10 +68,42 @@ public class Algo2 {
         for (HashMap<ArrayList<String>,Double> factor : factors) {
             System.out.println("Factor: " + factor);
         }
-        // Now, we want to eliminate hidden vars ordered by ABC
+        // In Algo3 we will use a heuristic order - by the smallest CPT
         ArrayList<String> varsNames = network.getVarsNames();
         System.out.println("Vars order before sort: " + varsNames.toString());
-        Collections.sort(varsNames);
+
+        Hashtable<String, Integer> varAndCPTSSize = new Hashtable<>(); // each var and the size of all the CPT's that contains it
+        for (String varName : varsNames){
+            Set<HashMap<ArrayList<String>, Double>> relevantCPTs = getVarFactors(varName);
+            int relevantCPTsSize = 0;
+            for (HashMap<ArrayList<String>, Double> cpt : relevantCPTs){
+                int CPTSize;
+                for (ArrayList<String> cptLine : cpt.keySet()){
+                    CPTSize = cpt.size() * cptLine.size();
+                    relevantCPTsSize += CPTSize;
+                }
+            }
+            varAndCPTSSize.put(varName, relevantCPTsSize);
+        }
+
+        ArrayList<String> visited = new ArrayList<>();
+        for (int i=0; i < varAndCPTSSize.size(); i++) {
+            int min = 999999999;
+            String minVar = "";
+            for (String varName : varAndCPTSSize.keySet()) {
+                if (!visited.contains(varName)) {
+                    int size = varAndCPTSSize.get(varName);
+                    if (size < min) {
+                        min = size;
+                        minVar = varName;
+                    }
+                }
+            }
+            System.out.println(minVar);
+            visited.add(minVar);
+
+        }
+        varsNames = visited;
         System.out.println("Vars order after sort: " + varsNames.toString());
         // Let's check which vars are hidden
         factors.removeIf(entries->entries.size()==1);
@@ -378,7 +410,7 @@ public class Algo2 {
     }
 
     public ArrayList<String> getCommonVars(HashMap<ArrayList<String>,Double> factor1,
-                                    HashMap<ArrayList<String>,Double> factor2){
+                                           HashMap<ArrayList<String>,Double> factor2){
         ArrayList<String> vars1 = new ArrayList<>();
         ArrayList<String> vars2 = new ArrayList<>();
         ArrayList<String> finalVars = new ArrayList<>();
@@ -441,7 +473,7 @@ public class Algo2 {
 
     // Function which join two factors
     public void joinFactors(HashMap<ArrayList<String>,Double> factor1,
-                                 HashMap<ArrayList<String>,Double> factor2, Set<HashMap<ArrayList<String>, Double>> relevantFactors){
+                            HashMap<ArrayList<String>,Double> factor2, Set<HashMap<ArrayList<String>, Double>> relevantFactors){
         Set<ArrayList<String>> alreadyAdded = new HashSet<>();
         ArrayList<String> commonVars = getCommonVars(factor1, factor2); // get the common vars - we are joining according to them
         HashMap<ArrayList<String>,Double> newFactor = new HashMap<>(); // the new factor after join
