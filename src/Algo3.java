@@ -85,6 +85,16 @@ public class Algo3 {
             }
             varAndCPTSSize.put(varName, relevantCPTsSize);
         }
+//        for (String varName: varsNames){
+//            int count = 0;
+//            Variable var = network.getVarByName(varName);
+//            for (Variable parent : var.getParents()){
+//                if (queryVars.contains(parent.getName())){
+//                    count++;
+//                }
+//            }
+//            varAndCPTSSize.put(varName, count);
+//        }
 
         ArrayList<String> visited = new ArrayList<>();
         for (int i=0; i < varAndCPTSSize.size(); i++) {
@@ -93,7 +103,7 @@ public class Algo3 {
             for (String varName : varAndCPTSSize.keySet()) {
                 if (!visited.contains(varName)) {
                     int size = varAndCPTSSize.get(varName);
-                    if (size < min) {
+                    if (size <= min) {
                         min = size;
                         minVar = varName;
                     }
