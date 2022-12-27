@@ -119,7 +119,13 @@ public class Algo2 {
                     for (HashMap<ArrayList<String>, Double> factor : relevantFactors){
                         System.out.println("Factor before eliminate: " + factor);
                         System.out.println(varName);
-                        eliminateFactor(network.getVarByName(varName), factor, relevantFactors);
+                        // if only the hidden value left so we can delete the factor because it will become with only one line
+                        if (factor.size()==network.getVarByName(varName).getValues().size()){
+                            factors.remove(factor);
+                        }
+                        else{
+                            eliminateFactor(network.getVarByName(varName), factor, relevantFactors);
+                        }
                         System.out.println("PLUS COUNT: " + this.plusCount + ", " + "MULT COUNT: " + this.multCount);
                         System.out.println("Factor after eliminate: " + relevantFactors);
                     }
@@ -150,6 +156,18 @@ public class Algo2 {
                     factor2 = factor;
                 }
                 index++;
+            }
+            boolean deleted = false;
+            if (factor1.size()==1){
+                factors.remove(factor1);
+                deleted = true;
+            }
+            if (factor2.size()==1){
+                factors.remove(factor2);
+                deleted = true;
+            }
+            if (deleted){
+                continue;
             }
             joinFactors(factor1, factor2, factors);
             System.out.println("PLUS COUNT: " + this.plusCount + ", " + "MULT COUNT: " + this.multCount);
